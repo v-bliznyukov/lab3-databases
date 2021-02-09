@@ -1,0 +1,52 @@
+--1
+SELECT * FROM public.country WHERE country_id>=12 AND country_id<18 ORDER BY country_id ASC;
+--2
+SELECT address FROM address WHERE city_id IN(SELECT city_id FROM city WHERE upper(city) LIKE 'A%');
+
+--3
+SELECT first_name, last_name, amount 
+FROM customer RIGHT JOIN payment ON customer.customer_id=payment.customer_id WHERE payment.amount>11;
+--4
+SELECT first_name, last_name, city FROM customer 
+LEFT JOIN (SELECT address, address_id, city FROM address 
+LEFT JOIN city ON address.city_id = city.city_id) AS address_city ON customer.address_id =address_city.address_id;
+
+--5
+Select cust.first_name
+from customer as cust
+group by cust.first_name
+having count(1) >1; 
+
+--Films and corresponding language
+CREATE VIEW language_film AS
+SELECT film.title, language.name 
+FROM film, language
+WHERE film.language_id=language.language_id;
+--implements VIEW language_film
+SELECT * FROM language_film;
+---drops the VIEW just in case
+--DROP VIEW language_film;
+
+--VIEW customers and their rental date
+CREATE VIEW customer_return AS
+SELECT customer.first_name, customer.last_name, rental.rental_date 
+FROM customer, rental
+WHERE customer.customer_id=rental.customer_id;
+
+--Season discount for every new movie - 40% discount
+CREATE OR REPLACE FUNCTION public.discount()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+   NEW.amount=OLD.amount*0.6;
+   RETURN NEW;
+END;
+$$
+
+CREATE TRIGGER discount 
+BEFORE
+INSERT OR UPDATE
+ON payment
+FOR EACH ROW EXECUTE PROCEDURE public.discount();
